@@ -12,7 +12,8 @@ import superjson from "superjson";
 import { ZodError } from "zod";
 
 import { getServerAuthSession } from "~/server/auth";
-import { db } from "~/server/db";
+import { prisma } from "~/server/db";
+import { type CreateNextContextOptions } from "@trpc/server/adapters/next";
 
 /**
  * 1. CONTEXT
@@ -26,11 +27,12 @@ import { db } from "~/server/db";
  *
  * @see https://trpc.io/docs/server/context
  */
-export const createTRPCContext = async (opts: { headers: Headers }) => {
-  const session = await getServerAuthSession();
+export const createTRPCContext = async (opts: CreateNextContextOptions) => {
+  const { req, res } = opts;
+  const session = await getServerAuthSession({ req, res });
 
   return {
-    db,
+    prisma,
     session,
     ...opts,
   };

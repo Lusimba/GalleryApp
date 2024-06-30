@@ -1,16 +1,26 @@
 "use client";
-import React from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../trpc/react';
 import { useSession } from 'next-auth/react';
 
-const Sidebar: React.FC = () => {
+interface SidebarProps {
+  onButtonClick: (page: string) => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ onButtonClick }) => {
     const { data: session } = useSession();
     const router = useRouter();
+    const [current, setCurrent] = useState<string>('community');
 
-//   const { data: userStats } = api.gallery.getUserStats.useQuery(undefined, {
-//     enabled: !!session?.user,
-//   });
+    const activeStyle = 'text-white text-lg mb-4 w-full py-2 bg-[#D927C7] rounded-[.5rem]';
+    const inactiveStyle = 'text-white text-lg mb-4 w-full py-2';
+
+  const { data: user } = api.gallery.getUserStats.useQuery(undefined, {
+    enabled: !!session?.user,
+  });
+    
+    
 
   const handleSignIn = () => {
     router.push('/login');
@@ -20,8 +30,18 @@ const Sidebar: React.FC = () => {
     <div className="bg-[#3F3F3F] grid grid-rows-[80%,20%] h-screen flex flex-col">
       <div className='flex items-center justify-center'>
         <div className='w-full'>
-          <button className="text-white text-lg mb-4 w-full py-2 bg-[#D927C7] rounded-[.5rem]">Community</button>
-          <button className="text-white text-lg w-full py-2">My Store</button>
+                  <button
+                      className={current === 'community' ? activeStyle : inactiveStyle}
+                      onClick={() => onButtonClick('community')}
+                  >
+                      Community
+                  </button>
+                  <button
+                      className={current === 'community' ? activeStyle : inactiveStyle}
+                      onClick={() => onButtonClick('mystore')}
+                  >
+                      My Store
+                  </button>
         </div>
       </div>
       
@@ -37,6 +57,7 @@ const Sidebar: React.FC = () => {
                 <div className="text-white flex-col">
                     <p>{session?.user?.name}</p>
                     {/* <p>Joined for {userStats.timeSinceJoin} / +{userStats.totalLikes} Likes</p> */}
+                    <p>Joined for {user?.name} Likes</p>
                 </div>
             </div>
           </div>

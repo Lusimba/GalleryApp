@@ -9,9 +9,10 @@ import { createTRPCContext } from "~/server/api/trpc";
  * This wraps the `createTRPCContext` helper and provides the required context for the tRPC API when
  * handling a HTTP request (e.g. when you make requests from Client Components).
  */
+
 const createContext = async (req: NextRequest) => {
   return createTRPCContext({
-    headers: req.headers,
+    req,
   });
 };
 
@@ -29,6 +30,9 @@ const handler = (req: NextRequest) =>
             );
           }
         : undefined,
+    batching: {
+      enabled: true,
+    },
   });
 
 export { handler as GET, handler as POST };

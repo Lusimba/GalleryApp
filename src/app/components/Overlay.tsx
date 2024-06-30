@@ -2,6 +2,8 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import ImageUploader from './image-uploader';
+import { api } from '../../trpc/react';
+import { useSession } from 'next-auth/react';
 
 interface OverlayProps {
   isVisible: boolean;
@@ -9,10 +11,26 @@ interface OverlayProps {
 }
 
 const Overlay: React.FC<OverlayProps> = ({ isVisible, onClose }) => {
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const [uploadedImageUrl, setUploadedImageUrl] = useState<string>('');
-  const [title, setTitle] = useState<string>('');
-  const [description, setDescription] = useState<string>('');
+    const overlayRef = useRef<HTMLDivElement>(null);
+    const [uploadedImageUrl, setUploadedImageUrl] = useState<string>('');
+    const [title, setTitle] = useState<string>('');
+    const [description, setDescription] = useState<string>('');
+
+    const  { mutate: uploadPicture } = api.gallery.uploadPicture.useMutation();
+    const session = useSession();
+    
+    const handleUpload = async () => {
+    try {
+        uploadPicture({
+            imageUrl: uploadedImageUrl,
+            title: title,
+            description: description,
+            userId: session.data?.user?.id ?? '',
+        });
+    } catch (error) {
+      console.error('Error uploading picture:', error);
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -35,7 +53,7 @@ const Overlay: React.FC<OverlayProps> = ({ isVisible, onClose }) => {
   if (!isVisible) return null;
 
   return (
-    <div className="inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
       <div ref={overlayRef} className="bg-[#212121] p-6 rounded-lg w-full max-w-5xl mx-4 lg:mx-auto shadow-2xl shadow-black/80">
         <OverlayHeader />
         <ImageUploaderSection onImageUpload={setUploadedImageUrl} />
@@ -54,6 +72,7 @@ const Overlay: React.FC<OverlayProps> = ({ isVisible, onClose }) => {
           onChange={(e) => setDescription(e.target.value)}
           rows={2}
         />
+        <button className="bg-[#D927C7] text-white py-2 px-4 rounded" onClick={handleUpload}>Share with Community</button>
       </div>
     </div>
   );

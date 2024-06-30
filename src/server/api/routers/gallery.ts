@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure, protectedProcedure } from "../trpc";
 import { prisma } from "../../db";
-// import { getDateDifference } from "../../../utils/dateUtils";
+import { PictureUpload, addLike } from "../../../types";
 
 export const galleryRouter = createTRPCRouter({
   // Public route to get all pictures
@@ -23,23 +23,23 @@ export const galleryRouter = createTRPCRouter({
 
   // Protected route to upload a picture
   uploadPicture: protectedProcedure
-    .input(z.object({ 
-      title: z.string(), 
-      description: z.string().optional(), 
-      imageUrl: z.string() 
-    }))
+    .input(PictureUpload)
     .mutation(async ({ input, ctx }) => {
       const { title, description, imageUrl } = input;
-      const userId = ctx.session.user.id;
+      const userEmail = ctx.session.user.email;
+      const user = await prisma.user.findUnique({
+        where: { email: userEmail ?? '' },
+      });
+      const id = user?.id ?? '';
 
       await prisma.picture.create({
-        data: { title, description, imageUrl, userId },
+        data: { title, description, imageUrl, user: { connect: { id } } },
       });
     }),
 
   // Protected route to add a like to a picture
   addLike: protectedProcedure
-    .input(z.object({ pictureId: z.string() }))
+    .input(addLike)
     .mutation(async ({ input, ctx }) => {
       const { pictureId } = input;
       const userId = ctx.session.user.id;
@@ -66,7 +66,12 @@ export const galleryRouter = createTRPCRouter({
 
   // Protected route to get basic user profile and stats
   getUserStats: protectedProcedure.query(async ({ ctx }) => {
-    const userId = ctx.session.user.id;
+    const userEmail = ctx.session.user.email;
+      const loggedinUser = await prisma.user.findUnique({
+        where: { email: userEmail ?? '' },
+      });
+    const userId = loggedinUser?.id ?? '';
+    
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -83,22 +88,6 @@ export const galleryRouter = createTRPCRouter({
       throw new Error("User not found");
     }
 
-    // const now = new Date();
-    // // const createdAt = user.createdAt ?? new Date();
-    // const { years, months, days, hours } = getDateDifference(user.createdAt, now);
-
-    // const timeSinceJoin = 
-    //   years ? `${years} year(s)` :
-    //   months ? `${months} month(s)` :
-    //   days ? `${days} day(s)` :
-    //   `${hours} hour(s)`;
-
-    // const totalLikes = user.picture.reduce((acc, pic) => acc + pic.likes.length, 0);
-    
-    // return {
-    //   fullName: user.name ?? "",
-    //   timeSinceJoin,
-    //   totalLikes,
-    // };
+    return user;
   }),
 });

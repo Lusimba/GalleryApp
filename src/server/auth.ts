@@ -32,7 +32,7 @@ export const authOptions: NextAuthOptions = {
       ...session,
       user: {
         ...session.user,
-        userId: token.sub,
+        id: token.sub,
       },
     }),
     async signIn({ account, profile }) {
@@ -64,5 +64,5 @@ export const getServerAuthSession = (ctx: {
   req: GetServerSidePropsContext["req"];
   res: GetServerSidePropsContext["res"];
 }) => {
-  return getServerSession(ctx.req, ctx.res, authOptions);
+  return getServerSession(authOptions);
 };

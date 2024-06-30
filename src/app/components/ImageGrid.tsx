@@ -2,48 +2,40 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { useQuery, useIsFetching } from "@tanstack/react-query";
-import axios from "axios";
+import { api } from '../../trpc/react';
 
-interface Picture {
-    id: string;
-    url: string;
+interface ImageType {
+    imageUrl: string;
     title: string;
-    description: string;
-    likes: number;
-    user: {
-        id: string;
-        name: string;
-        email: string;
-        image: string;
-    };
 }
 
-const ImageGrid: React.FC = () => {
-    const { data: images } = useQuery<Picture[]>(
-        { queryKey: ["getAllPictures"] },
-        async () => {
-          const response = await axios.get("/api/getAllPictures");
-          return response.data;
-        }
-    )
+interface ImageGridProps {
+  selectedPage: string;
+}
+
+
+const ImageGrid: React.FC<ImageGridProps> = ({ selectedPage }) => {
+    const { data: allImages } = api.gallery.getAllPictures.useQuery();
+    const { data: myImages } = api.gallery.getMyPictures.useQuery();
+
+    const images = selectedPage === 'community' ? allImages : myImages;
     
-  return (
-    <div className="grid grid-cols-3 gap-4">
-      {/* Example image blocks */}
-      {images?.map((image, index) => (
-        <div key={index} className="bg-black h-48 flex items-center justify-center">
-          <Image
-            src={image.url}
-            alt={image.title}
-                  className="h-full object-cover"
-            width={300}
-            height={300}
-          />
+    return (
+        <div className="grid grid-cols-3 gap-4">
+        {/* Example image blocks */}
+        {images?.map((image: ImageType, index) => (
+            <div key={index} className="bg-black h-48 flex items-center justify-center">
+            <Image
+                src={image.imageUrl}
+                alt={image.title}
+                    className="h-full object-cover"
+                width={300}
+                height={300}
+            />
+            </div>
+        ))}
         </div>
-      ))}
-    </div>
-  );
+    );
 };
 
 export default ImageGrid;
