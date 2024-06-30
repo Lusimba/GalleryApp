@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../trpc/react';
 import { useSession } from 'next-auth/react';
@@ -8,22 +8,54 @@ interface SidebarProps {
   onButtonClick: (page: string) => void;
 }
 
+const calculateMemberDuration = (createdAt: Date): string => {
+    const currentDate = new Date();
+    const joinedDate = new Date(createdAt);
+
+    const duration = currentDate.getTime() - joinedDate.getTime();
+    const years = Math.floor(duration / (1000 * 60 * 60 * 24 * 365));
+    const months = Math.floor((duration % (1000 * 60 * 60 * 24 * 365)) / (1000 * 60 * 60 * 24 * 30));
+    const days = Math.floor((duration % (1000 * 60 * 60 * 24 * 30)) / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((duration % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+    if (years > 0) {
+        return `${years} y`;
+    } else if (months > 0) {
+        return `${months} m`;
+    } else if (days > 0){
+        return `${days} d`;
+    } else {
+        return `${hours} h`;
+    }
+};
+
 const Sidebar: React.FC<SidebarProps> = ({ onButtonClick }) => {
     const { data: session } = useSession();
     const router = useRouter();
     const [current, setCurrent] = useState<string>('community');
+    const [memberDuration, setMemberDuration] = useState<string>("");
+    const [totalLikes, setTotalLikes] = useState<number>(0);
 
     const activeStyle = 'text-white text-lg mb-4 w-full py-2 bg-[#D927C7] rounded-[.5rem]';
     const inactiveStyle = 'text-white text-lg mb-4 w-full py-2';
 
-  const { data: user } = api.gallery.getUserStats.useQuery(undefined, {
-    enabled: !!session?.user,
-  });
+    const { data: user } = api.gallery.getUserStats.useQuery();
     
+    useEffect(() => {
+        const duration = calculateMemberDuration(new Date(user? user?.createdAt : ''));
+        setMemberDuration(duration);
+        // setTotalLikes(user?.totalLikes ?? 0); still buggy. I will set it as 0 for now.
+        setTotalLikes(0);
+    }, [user]);
     
 
   const handleSignIn = () => {
     router.push('/login');
+  };
+  
+  const togglePage = (page: string) => {
+    setCurrent(page);
+    onButtonClick(page);
   };
 
   return (
@@ -32,13 +64,13 @@ const Sidebar: React.FC<SidebarProps> = ({ onButtonClick }) => {
         <div className='w-full'>
                   <button
                       className={current === 'community' ? activeStyle : inactiveStyle}
-                      onClick={() => onButtonClick('community')}
+                      onClick={() => togglePage('community')}
                   >
                       Community
                   </button>
                   <button
-                      className={current === 'community' ? activeStyle : inactiveStyle}
-                      onClick={() => onButtonClick('mystore')}
+                      className={current === 'mystore' ? activeStyle : inactiveStyle}
+                      onClick={() => togglePage('mystore')}
                   >
                       My Store
                   </button>
@@ -55,9 +87,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onButtonClick }) => {
             </div>
             <div className="w-3/4 items-center justify-center">
                 <div className="text-white flex-col">
-                    <p>{session?.user?.name}</p>
-                    {/* <p>Joined for {userStats.timeSinceJoin} / +{userStats.totalLikes} Likes</p> */}
-                    <p>Joined for {user?.name} Likes</p>
+                    <b>{session?.user?.name}</b>
+                    <p>Joined for {memberDuration} / + {totalLikes} Likes</p>
                 </div>
             </div>
           </div>

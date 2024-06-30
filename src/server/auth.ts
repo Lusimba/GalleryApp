@@ -35,7 +35,7 @@ export const authOptions: NextAuthOptions = {
         id: token.sub,
       },
     }),
-    async signIn({ account, profile }) {
+    async signIn({ profile }) {
       try {
         if (!profile?.email) {
           throw new Error('Profile not found');

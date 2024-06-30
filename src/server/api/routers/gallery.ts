@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { createTRPCRouter, publicProcedure, protectedProcedure } from "../trpc";
 import { prisma } from "../../db";
 import { PictureUpload, addLike } from "../../../types";
@@ -15,10 +14,21 @@ export const galleryRouter = createTRPCRouter({
 
   // Protected route to get user's own pictures
   getMyPictures: protectedProcedure.query(async ({ ctx }) => {
-    const userId = ctx.session.user.id;
-    return prisma.picture.findMany({
-      where: { userId },
-    });
+    const userEmail = ctx.session.user.email;
+      const user = await prisma.user.findUnique({
+        where: { email: userEmail ?? '' },
+      });
+      const id = user?.email ?? '';
+      
+      const images = prisma.picture.findMany({
+        where: { userId: id },
+        include: {
+          user: { select: { name: true } },
+          likes: { select: { userId: true } },
+        }
+      });
+
+      return images;
   }),
 
   // Protected route to upload a picture
@@ -46,21 +56,6 @@ export const galleryRouter = createTRPCRouter({
 
       await prisma.like.create({
         data: { userId, pictureId },
-      });
-    }),
-  
-  // Protected route to delete a like from a picture
-  deleteLike: protectedProcedure
-    .input(z.object({ pictureId: z.string() }))
-    .mutation(async ({ input, ctx }) => {
-      const { pictureId } = input;
-      const userId = ctx.session.user.id;
-
-      await prisma.like.deleteMany({
-        where: {
-          pictureId,
-          userId,
-        },
       });
     }),
 

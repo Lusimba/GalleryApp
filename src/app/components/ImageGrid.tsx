@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Image from 'next/image';
 import { api } from '../../trpc/react';
 
@@ -15,8 +15,16 @@ interface ImageGridProps {
 
 
 const ImageGrid: React.FC<ImageGridProps> = ({ selectedPage }) => {
-    const { data: allImages } = api.gallery.getAllPictures.useQuery();
-    const { data: myImages } = api.gallery.getMyPictures.useQuery();
+    const { data: allImages, refetch: refetchAll } = api.gallery.getAllPictures.useQuery();
+    const { data: myImages, refetch: refetchMine } = api.gallery.getMyPictures.useQuery();
+
+    useEffect(() => {
+        if (selectedPage === 'community') {
+        refetchAll();
+        } else {
+        refetchMine();
+        }
+    }, [selectedPage, refetchAll, refetchMine]);
 
     const images = selectedPage === 'community' ? allImages : myImages;
     
@@ -24,12 +32,12 @@ const ImageGrid: React.FC<ImageGridProps> = ({ selectedPage }) => {
         <div className="grid grid-cols-3 gap-4">
         {/* Example image blocks */}
         {images?.map((image: ImageType, index) => (
-            <div key={index} className="bg-black h-48 flex items-center justify-center">
+            <div key={index} className="bg-black h-48 flex items-center justify-center rounded-[1.2rem] overflow-hidden">
             <Image
                 src={image.imageUrl}
                 alt={image.title}
-                    className="h-full object-cover"
-                width={300}
+                    className="h-full w-full object-cover"
+                width={200}
                 height={300}
             />
             </div>
